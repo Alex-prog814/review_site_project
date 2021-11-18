@@ -24,11 +24,27 @@ function createUser(userObj){
         }
     });
 }
+
+async function isRegisteredCheck(username){
+    let res = await fetch('http://localhost:8000/users')
+    let data = await res.json()
+    let isRegistered = false
+    data.forEach((item) => {
+        item.username === username ? isRegistered = true : isRegistered = false
+    })
+    return isRegistered
+}
 // end users sripts
 
 // reviews scripts
 // add review logic
-$("#add-review-btn").on("click", () => {
+$("#add-review-btn").on("click", async function() {
+    let username = $("#add-review-user").val()
+    let checkUser = await isRegisteredCheck(username)
+    if(!checkUser){
+        alert("Please register")
+        return
+    }
     let reviewObj = {
         trailer: $("#add-review-trailer").val(),
         title: $("#add-review-title").val(),
@@ -71,7 +87,7 @@ async function render(){
                                     <p class="card-text">${item.desc}</p>
                                     <p>added by: ${item.user}</p>
                                     <p>Likes: ${item.likeCount}</p>
-                                    <a href="#" class="btn btn-primary">LIKE</a>
+                                    <a href="#" class="btn btn-primary" id="like-review">LIKE</a>
                                     <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleAddReviewModal">UPDATE</a>
                                     <a href="#" class="btn btn-danger">DELETE</a>
                                 </div>
@@ -135,6 +151,28 @@ $('body').on('click', '.edit-review-btn', async function(e){
     await fetch(`http://localhost:8000/reviews/${id}`, {
         method: 'PUT',
         body: JSON.stringify(newReviewObj),
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8'
+        }
+    })
+        .then(() => render())
+})
+
+// like review
+$('body').on('click', '#like-review', async function(e){
+    let id = e.target.parentNode.parentNode.id
+    let data = await getDetailData(id)
+    let likedReviewObj = {
+        trailer: data.trailer,
+        title: data.title,
+        desc: data.desc,
+        likeCount: data.likeCount + 1,
+        user: data.user
+    }
+
+    await fetch(`http://localhost:8000/reviews/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(likedReviewObj),
         headers: {
             'Content-Type': 'application/json;charset=utf-8'
         }
